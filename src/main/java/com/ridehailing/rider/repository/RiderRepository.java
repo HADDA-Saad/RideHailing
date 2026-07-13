@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface RiderRepository extends JpaRepository<Rider,Long> {
+    Optional<Rider> findById(Long id);
     List<Rider> findByName(String name);
     Optional<Rider> findByEmail(String email);
 

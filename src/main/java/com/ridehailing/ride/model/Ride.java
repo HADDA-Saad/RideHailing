@@ -21,8 +21,9 @@ public class Ride {
     @JoinColumn(name = "rider_id", nullable = false)
     private Rider rider;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status;
+    private RideStatus status;
 
     @Column(nullable = false)
     private double price;

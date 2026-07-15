@@ -1,6 +1,7 @@
     package com.ridehailing.ride.repository;
 
     import com.ridehailing.ride.model.Ride;
+    import com.ridehailing.ride.model.RideStatus;
     import org.springframework.data.jpa.repository.JpaRepository;
 
     import java.util.List;
@@ -9,6 +10,6 @@
     public interface RideRepository extends JpaRepository<Ride,Long> {
         List<Ride> findByRiderId(Long id);
         List<Ride> findByDriverId(Long id);
-        List<Ride> findByStatus(String status);
+        List<Ride> findByStatus(RideStatus status);
 
     }

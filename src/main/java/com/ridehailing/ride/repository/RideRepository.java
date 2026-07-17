@@ -11,5 +11,4 @@
         List<Ride> findByRiderId(Long id);
         List<Ride> findByDriverId(Long id);
         List<Ride> findByStatus(RideStatus status);
-
     }

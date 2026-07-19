@@ -10,6 +10,4 @@ import java.util.Optional;
 public interface DriverLocationRepository extends JpaRepository<DriverLocation,Long> {
     List<DriverLocation> findByDriverId(Long id);
     Optional<DriverLocation> findTopByDriverIdOrderByTimestampDesc(Long DriverId);
-
-    Long driver(Driver driver);
 }

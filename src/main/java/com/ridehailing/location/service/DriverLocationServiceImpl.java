@@ -1,20 +1,30 @@
 package com.ridehailing.location.service;
 
+import com.ridehailing.driver.model.Driver;
+import com.ridehailing.driver.repository.DriverRepository;
+import com.ridehailing.driver.service.DriverService;
 import com.ridehailing.location.model.DriverLocation;
 import com.ridehailing.location.repository.DriverLocationRepository;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
 
+@Service
 public class DriverLocationServiceImpl implements DriverLocationService{
-    private DriverLocationRepository repo;
-    public DriverLocationServiceImpl(DriverLocationRepository repo){this.repo=repo;}
+    private final DriverLocationRepository repo;
+    private final DriverRepository driverRepo;
+    public DriverLocationServiceImpl(DriverLocationRepository repo ,DriverRepository driverRepo){
+        this.repo=repo;
+        this.driverRepo=driverRepo;
+    }
     public DriverLocation saveLocation(Long driverId, double lat, double lng){
         DriverLocation location=new DriverLocation();
+        location.setDriver(driverRepo.findById(driverId).orElseThrow(()->new RuntimeException("Driver not found")) );
         location.setLatitude(lat);
         location.setLongitude(lng);
         location.setTimestamp(LocalDate.now());
-        return location;
+        return repo.save(location);
     }
 
     public DriverLocation getLatest(Long driverId){

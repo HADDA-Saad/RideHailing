@@ -1,8 +1,6 @@
 package com.ridehailing.location.service;
 
-import com.ridehailing.driver.model.Driver;
 import com.ridehailing.driver.repository.DriverRepository;
-import com.ridehailing.driver.service.DriverService;
 import com.ridehailing.location.model.DriverLocation;
 import com.ridehailing.location.repository.DriverLocationRepository;
 import org.springframework.stereotype.Service;

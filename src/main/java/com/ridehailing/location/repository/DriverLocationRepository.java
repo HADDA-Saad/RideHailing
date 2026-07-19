@@ -1,6 +1,5 @@
 package com.ridehailing.location.repository;
 
-import com.ridehailing.driver.model.Driver;
 import com.ridehailing.location.model.DriverLocation;
 import org.springframework.data.jpa.repository.JpaRepository;
 

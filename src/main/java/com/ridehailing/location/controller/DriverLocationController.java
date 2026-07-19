@@ -1,11 +1,9 @@
 package com.ridehailing.location.controller;
 
-import com.ridehailing.driver.model.Driver;
-import com.ridehailing.driver.service.DriverService;
+
 import com.ridehailing.location.dto.DriverLocationRequest;
 import com.ridehailing.location.dto.DriverLocationResponse;
 import com.ridehailing.location.model.DriverLocation;
-import com.ridehailing.location.repository.DriverLocationRepository;
 import com.ridehailing.location.service.DriverLocationService;
 import org.springframework.web.bind.annotation.*;
 

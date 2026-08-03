@@ -15,21 +15,15 @@ import java.util.List;
 @Service
 public class RideServiceImpl implements RideService{
     private final RideRepository rideRepo;
-    private final DriverRepository driverRepo;
-    private final RiderRepository riderRepo;
 
     public RideServiceImpl(
             RideRepository rideRepo,DriverRepository driverRepo,RiderRepository riderRepo){
         this.rideRepo=rideRepo;
-        this.driverRepo=driverRepo;
-        this.riderRepo=riderRepo;
     }
     public Ride requestRide(Long driverId,Long riderId){
-        Driver driver= driverRepo.findById(driverId).orElseThrow(()->new RuntimeException("Driver not found"));
-        Rider rider= riderRepo.findById(riderId).orElseThrow(()->new RuntimeException("Rider not found"));
         Ride ride=new Ride();
-        ride.setRider(rider);
-        ride.setDriver(driver);
+        ride.setRiderId(riderId);
+        ride.setDriverId(driverId);
         ride.setStatus(RideStatus.ACTIVE);
         return rideRepo.save(ride);
     }

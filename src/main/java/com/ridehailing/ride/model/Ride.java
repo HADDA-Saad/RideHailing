@@ -13,13 +13,11 @@ public class Ride {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "driverId", nullable = false)
-    private Driver driver;
+    @Column(nullable = false)
+    private Long driverId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "rider_id", nullable = false)
-    private Rider rider;
+    @Column(nullable = false)
+    private Long riderId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

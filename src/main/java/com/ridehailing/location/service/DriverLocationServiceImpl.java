@@ -18,7 +18,7 @@ public class DriverLocationServiceImpl implements DriverLocationService{
     }
     public DriverLocation saveLocation(Long driverId, double lat, double lng){
         DriverLocation location=new DriverLocation();
-        location.setDriver(driverRepo.findById(driverId).orElseThrow(()->new RuntimeException("Driver not found")) );
+        location.setDriverId(driverId);
         location.setLatitude(lat);
         location.setLongitude(lng);
         location.setTimestamp(LocalDate.now());

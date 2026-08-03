@@ -8,7 +8,7 @@ public record DriverLocationResponse(Long id,Long driverId, double latitude, dou
     public static DriverLocationResponse from(DriverLocation location){
         return new DriverLocationResponse(
                 location.getId(),
-                location.getDriver().getId(),
+                location.getDriverId(),
                 location.getLatitude(),
                 location.getLongitude(),
                 location.getTimestamp()

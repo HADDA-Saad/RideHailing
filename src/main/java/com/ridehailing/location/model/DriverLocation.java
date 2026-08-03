@@ -16,9 +16,8 @@ public class DriverLocation {
     @GeneratedValue(strategy= GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch=FetchType.LAZY)
-    @JoinColumn(name = "driveId",nullable = false)
-    private Driver driver;
+    @Column(nullable = false)
+    private Long driverId;
 
     @Column(nullable = false)
     private double latitude;

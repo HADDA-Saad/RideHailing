@@ -5,6 +5,8 @@ import com.ridehailing.location.dto.DriverLocationRequest;
 import com.ridehailing.location.dto.DriverLocationResponse;
 import com.ridehailing.location.model.DriverLocation;
 import com.ridehailing.location.service.DriverLocationService;
+import com.ridehailing.location.service.LocationProducer;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,13 +15,15 @@ import java.util.List;
 @RequestMapping("/locations")
 public class DriverLocationController {
     private final DriverLocationService service;
-    public DriverLocationController(DriverLocationService service){
+    private final LocationProducer producer;
+    public DriverLocationController(DriverLocationService service,LocationProducer producer){
         this.service=service;
+        this.producer=producer;
     }
     @PostMapping
-    public DriverLocationResponse saveLocation(@RequestBody DriverLocationRequest request){
-        DriverLocation location=service.saveLocation(request.driverId(), request.latitude(),request.longitude());
-        return DriverLocationResponse.from(location);
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public void ingestLocation(@RequestBody DriverLocationRequest request){
+         producer.publish(request);
     }
 
     @GetMapping("/driver/{driverId}")

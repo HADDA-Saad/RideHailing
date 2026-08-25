@@ -11,10 +11,8 @@ import java.util.List;
 @Service
 public class DriverLocationServiceImpl implements DriverLocationService{
     private final DriverLocationRepository repo;
-    private final DriverRepository driverRepo;
-    public DriverLocationServiceImpl(DriverLocationRepository repo ,DriverRepository driverRepo){
+    public DriverLocationServiceImpl(DriverLocationRepository repo ){
         this.repo=repo;
-        this.driverRepo=driverRepo;
     }
     public DriverLocation saveLocation(Long driverId, double lat, double lng){
         DriverLocation location=new DriverLocation();

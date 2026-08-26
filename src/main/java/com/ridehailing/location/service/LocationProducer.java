@@ -8,6 +8,7 @@ import tools.jackson.databind.ObjectMapper;
 @Service
 public class LocationProducer {
     private static final String TOPIC = "driver-locations";
+    private static final String DLQ_TOPIC = "driver-locations-dlq";
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
     public LocationProducer(KafkaTemplate<String, String> kafka,
@@ -23,4 +24,8 @@ public class LocationProducer {
             throw new RuntimeException("Failed to publish location event", e);
         }
     }
+    public void publishToDlq(String rawPayload) {
+        kafkaTemplate.send(DLQ_TOPIC, rawPayload);
+    }
+
 }

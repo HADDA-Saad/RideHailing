@@ -2,7 +2,7 @@ package com.ridehailing.location.service;
 
 import com.ridehailing.location.dto.DriverLocationRequest;
 
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -34,7 +34,7 @@ public class LocationConsumer {
             com.ridehailing.location.model.DriverLocation savedLoc = service.saveLocation(req.driverId(),
                     req.latitude(), req.longitude());
             String key = REDIS_PREFIX + req.driverId();
-            redisTemplate.opsForValue().set(key, objectMapper.writeValueAsString(savedLoc), 24, TimeUnit.HOURS);
+            redisTemplate.opsForValue().set(key, objectMapper.writeValueAsString(savedLoc), Duration.ofHours(24));
         } catch (Exception e) {
             sendToDlq(payload, e);
         }

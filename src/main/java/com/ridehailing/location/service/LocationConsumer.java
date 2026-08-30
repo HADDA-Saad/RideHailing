@@ -1,6 +1,9 @@
 package com.ridehailing.location.service;
 
 import com.ridehailing.location.dto.DriverLocationRequest;
+
+import java.util.concurrent.TimeUnit;
+
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
@@ -15,28 +18,28 @@ public class LocationConsumer {
     private final LocationProducer producer;
 
     public LocationConsumer(DriverLocationService service,
-                            RedisTemplate<String, String> redisTemplate,
-                            ObjectMapper objectMapper,
-                            LocationProducer producer) {
+            RedisTemplate<String, String> redisTemplate,
+            ObjectMapper objectMapper,
+            LocationProducer producer) {
         this.service = service;
         this.redisTemplate = redisTemplate;
         this.objectMapper = objectMapper;
         this.producer = producer;
     }
-    @KafkaListener(
-            topics = "driver-locations",
-            groupId = "location-persistence"
-    )
+
+    @KafkaListener(topics = "driver-locations", groupId = "location-persistence")
     public void consume(String payload) {
         try {
-            DriverLocationRequest req =objectMapper.readValue(payload, DriverLocationRequest.class);
-            service.saveLocation(req.driverId(), req.latitude(), req.longitude());
+            DriverLocationRequest req = objectMapper.readValue(payload, DriverLocationRequest.class);
+            com.ridehailing.location.model.DriverLocation savedLoc = service.saveLocation(req.driverId(),
+                    req.latitude(), req.longitude());
             String key = REDIS_PREFIX + req.driverId();
-            redisTemplate.opsForValue().set(key, payload);
+            redisTemplate.opsForValue().set(key, objectMapper.writeValueAsString(savedLoc), 24, TimeUnit.HOURS);
         } catch (Exception e) {
             sendToDlq(payload, e);
         }
     }
+
     private void sendToDlq(String payload, Exception cause) {
         System.err.println("[DLQ] Unprocessable event: "
                 + cause.getMessage() + " | payload: " + payload);
@@ -44,4 +47,3 @@ public class LocationConsumer {
     }
 
 }
-

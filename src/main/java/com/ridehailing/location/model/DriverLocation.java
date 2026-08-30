@@ -1,19 +1,21 @@
 package com.ridehailing.location.model;
 
-import com.ridehailing.driver.model.Driver;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import java.time.LocalDate;;
+import org.hibernate.annotations.CreationTimestamp;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name="driver_locations")
-@Getter @Setter@NoArgsConstructor
+@Table(name = "driver_locations")
+@Getter
+@Setter
+@NoArgsConstructor
 
 public class DriverLocation {
     @Id
-    @GeneratedValue(strategy= GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)
@@ -25,7 +27,8 @@ public class DriverLocation {
     @Column(nullable = false)
     private double longitude;
 
-    @Column(nullable = false)
-    private LocalDate timestamp;
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime timestamp;
 
 }

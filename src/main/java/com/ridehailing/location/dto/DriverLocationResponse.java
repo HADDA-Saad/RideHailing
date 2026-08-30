@@ -14,4 +14,5 @@ public record DriverLocationResponse(Long id,Long driverId, double latitude, dou
                 location.getTimestamp()
         );
     }
+
 }

@@ -4,8 +4,10 @@ import com.ridehailing.location.dto.DriverLocationRequest;
 
 import java.time.Duration;
 
+import com.ridehailing.location.model.DriverLocation;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
@@ -15,14 +17,17 @@ public class LocationConsumer {
     private final DriverLocationService service;
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
+    private final SimpMessagingTemplate messagingTemplate;
     private final LocationProducer producer;
 
     public LocationConsumer(DriverLocationService service,
             RedisTemplate<String, String> redisTemplate,
             ObjectMapper objectMapper,
+            SimpMessagingTemplate messagingTemplate,
             LocationProducer producer) {
         this.service = service;
         this.redisTemplate = redisTemplate;
+        this.messagingTemplate=messagingTemplate;
         this.objectMapper = objectMapper;
         this.producer = producer;
     }
@@ -31,10 +36,12 @@ public class LocationConsumer {
     public void consume(String payload) {
         try {
             DriverLocationRequest req = objectMapper.readValue(payload, DriverLocationRequest.class);
-            com.ridehailing.location.model.DriverLocation savedLoc = service.saveLocation(req.driverId(),
-                    req.latitude(), req.longitude());
+            DriverLocation savedLoc = service.saveLocation(req.driverId(), req.latitude(), req.longitude());
+
             String key = REDIS_PREFIX + req.driverId();
             redisTemplate.opsForValue().set(key, objectMapper.writeValueAsString(savedLoc), Duration.ofHours(24));
+
+            messagingTemplate.convertAndSend("/topic/driver-locations",payload);
         } catch (Exception e) {
             sendToDlq(payload, e);
         }

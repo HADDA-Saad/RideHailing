@@ -51,7 +51,9 @@ class DriverServiceImplTest {
         Driver driver=new Driver();
         driver.setName("Sam");
         when(repo.findById(1L)).thenReturn(Optional.of(driver));
+
         Driver result=service.findById(1L);
+
         assertThat(result).isSameAs(driver);
     }
     @Test
@@ -98,7 +100,7 @@ class DriverServiceImplTest {
     @Test
     void findByEmail_throws_whenUnknown() {
         when(repo.findByEmail("Sam@gmail.com")).thenReturn(Optional.empty());
-        assertThatThrownBy(()->service.findByEmail("Sam@gmail.com"))
+            assertThatThrownBy(()->service.findByEmail("Sam@gmail.com"))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("Driver not found");
     }

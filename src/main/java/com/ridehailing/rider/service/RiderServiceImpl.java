@@ -6,6 +6,8 @@ import com.ridehailing.rider.model.Rider;
 import com.ridehailing.rider.repository.RiderRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class RiderServiceImpl implements RiderService{
     private final RiderRepository repo;
@@ -24,5 +26,10 @@ public class RiderServiceImpl implements RiderService{
     public Rider findByEmail(String email){
         return repo.findByEmail(email).
                 orElseThrow(()->new RuntimeException("Rider not found"));
+    }
+
+    @Override
+    public List<Rider> findByName(String name) {
+        return repo.findByName(name);
     }
 }

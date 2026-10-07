@@ -1,241 +1,138 @@
 # RideHailing
 
-A ride-hailing backend built with **Spring Boot**, designed around a high-throughput driver location pipeline. Drivers stream their GPS positions to the API, which hands them off to **Kafka**; a consumer persists them to **PostgreSQL**, caches the latest position in **Redis**, and broadcasts live updates over **WebSocket (STOMP)**.
+A backend for a ride-hailing platform, in the spirit of Uber or Careem, built to explore one core question:
 
-## Features
+> **How do you keep track of thousands of moving drivers in real time without slowing the system down?**
 
-- **Driver & rider registration** and lookup
-- **Ride lifecycle**: request a ride, complete it, query by driver, rider, id or status
-- **Price estimation**: base fare + per-km rate with a surge multiplier, stored per ride
-- **Real-time driver locations**
-  - Asynchronous ingestion through Kafka (`202 Accepted` responses)
-  - Latest position served from Redis, with PostgreSQL as fallback
-  - Full location history per driver
-  - Live broadcast to subscribers on `/topic/driver-locations`
-  - Dead-letter topic (`driver-locations-dlq`) for events that fail processing
-- **Health checks** via Spring Boot Actuator
-- **k6 load test** simulating thousands of drivers pinging once per second
+This project is my answer to that question. It focuses on the *design ideas* behind a live ride-hailing system as much as on the code itself.
 
-## Tech Stack
+---
 
-| Layer | Technology |
-|---|---|
-| Language / Framework | Java 21, Spring Boot 4.1.0 (Web MVC, Data JPA, Actuator) |
-| Database | PostgreSQL 16 |
-| Messaging | Apache Kafka 3.7 (KRaft mode, no ZooKeeper) |
-| Cache | Redis 7 |
-| Real-time | Spring WebSocket + STOMP with SockJS |
-| Build | Maven (wrapper included), Lombok |
-| Containers | Docker (multi-stage build), Docker Compose |
-| Testing | JUnit / Spring Boot Test, k6 for load testing |
+## The Idea
 
-## Architecture
+In a ride-hailing app, every driver's phone constantly reports its position. A naive system would save each update straight to a database before replying, which works for ten drivers and breaks for ten thousand.
+
+RideHailing takes a different approach built on three concepts:
+
+### 1. Don't make the driver wait
+When a driver sends a location, the system simply acknowledges it and places it in a queue. The driver's app is never held up by storage or processing. Like a waiter who hands your order to the kitchen and moves on to the next table.
+
+### 2. Work behind the scenes
+A separate process picks locations off the queue at its own pace, saves them permanently, and updates the "latest known position" of each driver. If something fails, the problematic message is set aside instead of blocking everything else.
+
+### 3. Keep everyone up to date instantly
+Instead of riders repeatedly asking "where is my driver?", the system **pushes** each new position to connected apps the moment it is processed, so a driver moves smoothly on the map.
+
+This style of design is called **event-driven architecture**: things happen (events), and different parts of the system react independently.
+
+---
+
+## How It Works
 
 ```
-                       POST /locations
-  Driver app ───────────────────────────────▶ DriverLocationController
-                                                      │  (202 Accepted)
-                                                      ▼
-                                              LocationProducer
-                                                      │
-                                                      ▼
-                                       Kafka topic: driver-locations
-                                                      │
-                                                      ▼
-                                              LocationConsumer
-                              ┌───────────────────────┼────────────────────────┐
-                              ▼                       ▼                        ▼
-                         PostgreSQL                 Redis              WebSocket /topic/
-                    (location history)     (driver:latest:{id})        driver-locations
-                                                                               
-                     on failure ──▶ Kafka topic: driver-locations-dlq
+ Driver app
+     │  "I'm here"
+     ▼
+   API  ──────────────▶  Queue  ──────────────▶  Background worker
+ (instant reply)        (Kafka)                        │
+                                      ┌────────────────┼────────────────┐
+                                      ▼                ▼                ▼
+                                 Permanent         Fast memory       Live push
+                                  history          (latest spot)    to rider apps
+                              (PostgreSQL)           (Redis)        (WebSocket)
 ```
 
-Reads of a driver's latest location check Redis first (`driver:latest:{driverId}`, 24h TTL) and fall back to PostgreSQL on a cache miss.
+When someone asks for a driver's current position, the system checks fast memory first and only goes to the permanent database if needed. This keeps frequent reads quick.
 
-## Project Structure
+---
 
-```
-src/main/java/com/ridehailing/
-├── driver/          # Driver registration & lookup
-├── rider/           # Rider registration & lookup
-├── ride/            # Ride requests, status, completion
-├── PriceEstimate/   # Fare calculation and stored estimates
-└── location/        # Kafka producer/consumer, Redis cache, WebSocket config
-    ├── config/
-    ├── controller/
-    ├── service/
-    ├── repository/
-    ├── model/
-    └── dto/
-```
+## What the Platform Does
 
-Each module follows the same layout: `controller` → `service` (interface + impl) → `repository` → `model`, with `dto` records for requests and responses.
+- **Drivers and riders** can register and be looked up
+- **Rides** can be requested and completed, and searched by driver, rider or status
+- **Prices** are estimated from a base fare, the distance, and a surge multiplier for busy periods
+- **Driver locations** are collected continuously, stored as a history, and broadcast live
+- **Failed events** are redirected to a separate "problem" queue so nothing is silently lost
+- **System health** can be monitored through a built-in health endpoint
+- **Load testing** simulates thousands of drivers sending updates to see how the system behaves under pressure
 
-## Getting Started
+---
 
-### Prerequisites
+## Tools & Technologies
 
-- Docker and Docker Compose
-- (For local development without Docker) JDK 21 and Maven, or just use the included `./mvnw`
+Each tool was chosen for a specific job:
 
-### Run everything with Docker Compose
+| Tool | Role in the project | Why it's here |
+|---|---|---|
+| **Java 21** | Main language | Strong, mature ecosystem for backend systems |
+| **Spring Boot** | Application framework | Speeds up building structured, production-style web services |
+| **PostgreSQL** | Permanent database | Reliable storage for users, rides, prices and location history |
+| **Apache Kafka** | Message queue | Absorbs bursts of driver updates and decouples receiving from processing |
+| **Redis** | Fast in-memory cache | Serves each driver's latest position almost instantly |
+| **WebSocket (STOMP)** | Live connection | Pushes updates to apps instead of making them ask repeatedly |
+| **Docker & Docker Compose** | Packaging and setup | Runs the whole system with a single command |
+| **k6** | Load testing | Measures how the system holds up with many simultaneous drivers |
+| **JUnit** | Automated tests | Checks that the core business logic behaves correctly |
 
-1. Create a `.env` file in the project root with the database password:
+---
 
-   ```env
+## Project Organization
+
+The code is divided into independent areas, each responsible for one part of the business:
+
+- **Driver**: who the drivers are
+- **Rider**: who the riders are
+- **Ride**: trips and their status (waiting, active, completed, cancelled)
+- **Price Estimate**: how fares are calculated
+- **Location**: the real-time pipeline (queue, cache, live updates)
+
+Each area keeps its own logic separate, which makes the system easier to understand, test and extend.
+
+---
+
+## Running It
+
+You need [Docker](https://www.docker.com/) installed.
+
+1. Create a file named `.env` in the project folder containing a database password:
+   ```
    DB_PASSWORD=choose_a_password
    ```
-
-2. Build and start the stack:
-
+2. Start everything:
    ```bash
    docker compose up --build
    ```
+3. Check that it's running: <http://localhost:8080/actuator/health>
 
-This starts PostgreSQL, Kafka, Redis and the application. The app waits for all three dependencies to be healthy before starting.
+To try the load test, install [k6](https://k6.io/) and run `k6 run load-test.js`.
 
-| Service | Host port |
-|---|---|
-| API | `8080` |
-| PostgreSQL | `5433` (mapped to 5432 in the container) |
-| Kafka | `9092` |
-| Redis | `6379` |
+---
 
-Check that it's up:
+## Perspectives & Next Steps
 
-```bash
-curl http://localhost:8080/actuator/health
-```
+This is a working foundation, and there is a clear path to make it closer to a real product:
 
-### Run locally (app outside Docker)
+- **Smart driver matching:** automatically find the nearest available driver for a rider using location data
+- **Live ride tracking:** let a rider follow their driver's approach and trip in real time
+- **Real distance and pricing:** compute distance from actual routes and adjust surge pricing based on demand
+- **Accounts and security:** add login, roles for drivers and riders, and secure access to the API
+- **Input checks and clear errors:** validate data and return helpful messages when something goes wrong
+- **Mobile or web front end:** build rider and driver apps on top of this backend
+- **Scaling up:** run several copies of the service and split the queue across them to handle larger cities
+- **Monitoring:** dashboards and alerts to watch the system's health and performance
+- **Automated delivery:** run tests and build checks automatically on every change
 
-Start only the infrastructure, then run the app with Maven:
+---
 
-```bash
-docker compose up -d postgres kafka redis
-./mvnw spring-boot:run
-```
+## What This Project Demonstrates
 
-The repository has no `application.properties`, so the application is configured entirely through Spring's environment variables. When running on the host, provide the values yourself (note Postgres is exposed on port **5433** and Kafka advertises itself as `kafka:9092`, so you may need a hosts entry or an adjusted listener config):
+- Designing a system around **events** rather than direct, blocking calls
+- Combining a **database, a queue, a cache, and live connections**, each used for what it does best
+- Thinking about **performance and failure**, not only about features
+- Packaging a multi-service system so anyone can run it easily
 
-```bash
-export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5433/ridehailing
-export SPRING_DATASOURCE_USERNAME=ridehailing
-export SPRING_DATASOURCE_PASSWORD=choose_a_password
-export SPRING_KAFKA_BOOTSTRAP_SERVERS=localhost:9092
-export SPRING_DATA_REDIS_HOST=localhost
-export SPRING_DATA_REDIS_PORT=6379
-export SPRING_JPA_HIBERNATE_DDL_AUTO=update
-```
+---
 
-### Run the tests
+## Author
 
-```bash
-./mvnw test
-```
-
-Unit tests cover the driver, rider, ride and price estimate services.
-
-## API Reference
-
-All endpoints accept and return JSON.
-
-### Drivers — `/drivers`
-
-| Method | Path | Body | Description |
-|---|---|---|---|
-| `POST` | `/drivers` | `{ "name", "email" }` | Register a driver |
-| `GET` | `/drivers/{id}` | — | Get a driver by id |
-
-### Riders — `/riders`
-
-| Method | Path | Body | Description |
-|---|---|---|---|
-| `POST` | `/riders` | `{ "name", "email" }` | Register a rider |
-| `GET` | `/riders/{id}` | — | Get a rider by id |
-
-### Rides — `/rides`
-
-| Method | Path | Body | Description |
-|---|---|---|---|
-| `POST` | `/rides` | `{ "driverId", "riderId" }` | Request a ride (created as `ACTIVE`) |
-| `PATCH` | `/rides/{id}/complete` | — | Mark a ride `COMPLETED` |
-| `GET` | `/rides/{id}` | — | Get a ride by id |
-| `GET` | `/rides/driver/{driverId}` | — | Rides for a driver |
-| `GET` | `/rides/rider/{riderId}` | — | Rides for a rider |
-| `GET` | `/rides/status/{status}` | — | Rides by status: `WAITING`, `ACTIVE`, `COMPLETED`, `CANCELLED` |
-
-### Price estimates — `/prices`
-
-| Method | Path | Body | Description |
-|---|---|---|---|
-| `POST` | `/prices` | `{ "rideId", "distanceKm" }` | Calculate and store an estimate |
-| `GET` | `/prices/{rideId}` | — | Get the stored estimate for a ride |
-
-Pricing formula: `(baseFare + distanceKm × perKmRate) × surgeMultiplier`, currently `5.0`, `2.5` and `1.0`.
-
-### Driver locations — `/locations`
-
-| Method | Path | Body | Description |
-|---|---|---|---|
-| `POST` | `/locations` | `{ "driverId", "latitude", "longitude" }` | Publish a location to Kafka (returns `202 Accepted`) |
-| `GET` | `/locations/driver/{driverId}` | — | Latest known location (Redis → PostgreSQL) |
-| `GET` | `/locations/history/{driverId}` | — | All stored locations for a driver |
-
-### WebSocket
-
-- SockJS/STOMP endpoint: `/ws`
-- Subscribe to `/topic/driver-locations` to receive every location event as it is processed
-- Application destination prefix: `/app`
-
-### Example
-
-```bash
-# Register a driver and a rider
-curl -X POST localhost:8080/drivers -H 'Content-Type: application/json' \
-  -d '{"name":"Amine","email":"amine@example.com"}'
-curl -X POST localhost:8080/riders -H 'Content-Type: application/json' \
-  -d '{"name":"Sara","email":"sara@example.com"}'
-
-# Request a ride and estimate its price
-curl -X POST localhost:8080/rides -H 'Content-Type: application/json' \
-  -d '{"driverId":1,"riderId":1}'
-curl -X POST localhost:8080/prices -H 'Content-Type: application/json' \
-  -d '{"rideId":1,"distanceKm":8.4}'
-
-# Push a driver location and read it back
-curl -X POST localhost:8080/locations -H 'Content-Type: application/json' \
-  -d '{"driverId":1,"latitude":34,"longitude":-7}'
-curl localhost:8080/locations/driver/1
-```
-
-## Load Testing
-
-`load-test.js` is a [k6](https://k6.io/) script that simulates drivers (ids 1–500) around Rabat, each posting one location per second to `POST /locations`. It ramps up, holds a sustained load, then ramps down.
-
-Install k6 following the [official instructions](https://grafana.com/docs/k6/latest/set-up/install-k6/) (the `k6` package in `package.json` is not the k6 binary), then run:
-
-```bash
-k6 run load-test.js
-```
-
-Adjust the `stages` at the top of the script to match your machine; the default profile peaks at 10,000 virtual users.
-
-## Known Issues / Roadmap
-
-Things worth knowing about the current state of the code:
-
-- **Location coordinates are `Long`.** `DriverLocationRequest` declares `latitude`/`longitude` as `Long`, so fractional values (like those sent by `load-test.js`) will fail to deserialize. Changing them to `double` matches the entity and response DTO.
-- **Load test status check.** `load-test.js` asserts `status is 200`, but `POST /locations` returns `202`.
-- **Ambiguous route.** `GET /riders/{id}` and `GET /riders/{email}` map to the same pattern; Spring will refuse to start with this ambiguity. Give the email lookup its own path (e.g. `/riders/email/{email}`).
-- **WebSocket origins.** `setAllowedOriginPatterns("")` allows no origins; use `"*"` or a specific list for browser clients.
-- **No validation or error handling.** Missing entities throw a plain `RuntimeException` (HTTP 500); there is no bean validation or `@ControllerAdvice`.
-- **Rides don't verify drivers/riders** exist, don't calculate a price, and never use the `WAITING` or `CANCELLED` statuses yet.
-- **Driver matching** (finding the nearest available driver) is not implemented.
-- **No `application.properties`** is committed; configuration is supplied through environment variables.
-- Logging uses `System.out`; swap for SLF4J.
-
-## License
-
-No license has been specified yet. Add a `LICENSE` file to clarify how others may use this code.
+**Saad Hadda**: [GitHub](https://github.com/HADDA-Saad) · [LinkedIn](https://www.linkedin.com/in/saad-hadda-a6b703352)

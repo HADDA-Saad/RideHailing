@@ -29,6 +29,7 @@ class RiderServiceImplTest {
     @InjectMocks
     RiderServiceImpl service;
 
+    @Test
     @DisplayName("register: hands a fully built Rider to the repository")
     void register_passesBuiltRiderToRepository() {
         when(repo.save(any(Rider.class)))
@@ -93,6 +94,6 @@ class RiderServiceImplTest {
 
         Rider result=service.findByEmail("Sam@example.com");
 
-        assertThat(result.getEmail()).isSameAs(rider.getEmail());
+        assertThat(result.getEmail()).isEqualTo(rider.getEmail());
     }
 }

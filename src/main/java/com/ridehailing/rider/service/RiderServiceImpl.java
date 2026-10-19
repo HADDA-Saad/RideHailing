@@ -1,7 +1,6 @@
 package com.ridehailing.rider.service;
 
-import com.ridehailing.driver.repository.DriverRepository;
-import com.ridehailing.ride.repository.RideRepository;
+
 import com.ridehailing.rider.model.Rider;
 import com.ridehailing.rider.repository.RiderRepository;
 import org.springframework.stereotype.Service;

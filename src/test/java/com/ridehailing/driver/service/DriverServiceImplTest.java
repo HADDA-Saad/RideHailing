@@ -36,7 +36,7 @@ class DriverServiceImplTest {
         when(repo.save(any(Driver.class))).thenAnswer(inv -> inv.getArgument(0));
 
         //Act
-        Driver result=service.register("Sam","Sam@gmail.com");
+        Driver result=service.register(1L, "Sam", "Sam@gmail.com", "0600000000");
 
         //Assert
         assertThat(result.getName()).isEqualTo("Sam");

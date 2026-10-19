@@ -11,10 +11,12 @@ public class DriverServiceImpl implements DriverService{
         this.repo=repo;
     }
     @Override
-    public Driver register(String name, String email){
+    public Driver register(Long userId, String name, String email, String phone){
         Driver driver=new Driver();
+        driver.setUserId(userId);
         driver.setName(name);
         driver.setEmail(email);
+        driver.setPhone(phone);
         driver.setAvailable(true);
         return repo.save(driver);
     }

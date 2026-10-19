@@ -36,7 +36,7 @@ class RiderServiceImplTest {
                 .thenAnswer(inv-> inv.getArgument(0));
         ArgumentCaptor<Rider> captor=ArgumentCaptor.forClass(Rider.class);
 
-        service.register("Ema","Ema@gmail.com");
+        service.register(1L, "Ema", "Ema@gmail.com", "0600000000");
         verify(repo).save(captor.capture());
         assertThat(captor.getValue().getName()).isEqualTo("Ema");
         assertThat(captor.getValue().getEmail()).isEqualTo("Ema@gmail.com");
@@ -51,7 +51,7 @@ class RiderServiceImplTest {
                 thenAnswer(inv -> inv.getArgument(0));
         ArgumentCaptor<Rider> captor = ArgumentCaptor.forClass(Rider.class);
 
-        Rider result = service.register(null, null);
+        Rider result = service.register(null, null, null, null);
 
         verify(repo).save(captor.capture());
         assertThat(captor.getValue().getName()).isNull();

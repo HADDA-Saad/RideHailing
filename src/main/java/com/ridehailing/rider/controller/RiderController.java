@@ -1,6 +1,5 @@
 package com.ridehailing.rider.controller;
 
-import com.ridehailing.rider.dto.RegisterRiderRequest;
 import com.ridehailing.rider.dto.RiderResponse;
 import com.ridehailing.rider.model.Rider;
 import com.ridehailing.rider.service.RiderService;
@@ -15,22 +14,14 @@ public class RiderController {
         this.service=service;
     }
 
-    @PostMapping
-    public RiderResponse register(
-            @RequestBody RegisterRiderRequest request
-            ){
-        Rider rider=service.register(request.name(),request.email());
-        return  RiderResponse.from(rider);
-    }
-
     @GetMapping("/{id}")
     public RiderResponse findById(@PathVariable Long id){
         Rider rider=service.findById(id);
         return RiderResponse.from(rider);
     }
 
-    @GetMapping("/{email}")
-    public RiderResponse findByEmail(@PathVariable String email){
+    @GetMapping
+    public RiderResponse findByEmail(@RequestParam String email){
         Rider rider=service.findByEmail(email);
         return RiderResponse.from(rider);
     }

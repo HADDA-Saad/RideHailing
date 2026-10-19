@@ -12,10 +12,12 @@ import java.util.List;
 public class RiderServiceImpl implements RiderService{
     private final RiderRepository repo;
     public RiderServiceImpl(RiderRepository repo){this.repo=repo;}
-    public Rider register(String name, String email){
+    public Rider register(Long userId, String name, String email, String phone){
         Rider rider=new Rider();
+        rider.setUserId(userId);
         rider.setName(name);
         rider.setEmail(email);
+        rider.setPhone(phone);
         return repo.save(rider);
     }
     public Rider findById(Long id){

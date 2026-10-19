@@ -5,7 +5,7 @@ import com.ridehailing.rider.model.Rider;
 import java.util.List;
 
 public interface RiderService {
-    Rider register(String name,String email);
+    Rider register(Long userId, String name, String email, String phone);
     Rider findById(Long id);
     Rider findByEmail(String email);
     List<Rider> findByName(String name);

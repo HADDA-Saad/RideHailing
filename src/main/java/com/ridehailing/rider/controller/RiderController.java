@@ -19,10 +19,4 @@ public class RiderController {
         Rider rider=service.findById(id);
         return RiderResponse.from(rider);
     }
-
-    @GetMapping
-    public RiderResponse findByEmail(@RequestParam String email){
-        Rider rider=service.findByEmail(email);
-        return RiderResponse.from(rider);
-    }
 }

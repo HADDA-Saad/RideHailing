@@ -9,5 +9,6 @@ import java.util.Optional;
 public interface RiderRepository extends JpaRepository<Rider,Long> {
     List<Rider> findByName(String name);
     Optional<Rider> findByEmail(String email);
+    Optional<Rider> findByUserId(Long userId);
 
 }

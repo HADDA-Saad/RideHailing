@@ -6,6 +6,8 @@ public interface DriverService {
     Driver register(Long userId, String name, String email, String phone);
     Driver findById(Long id);
     Driver findByEmail(String email);
+    Driver findByUserId(Long userId);
+    Driver updateProfile(Long userId, String name, String phone);
     void setAvailability (Long id,boolean available);
 
 }

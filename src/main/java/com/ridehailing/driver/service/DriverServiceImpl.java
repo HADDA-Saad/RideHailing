@@ -34,6 +34,20 @@ public class DriverServiceImpl implements DriverService{
     }
 
     @Override
+    public Driver findByUserId(Long userId){
+        return repo.findByUserId(userId).
+                orElseThrow(()->new RuntimeException("Driver not found"));
+    }
+
+    @Override
+    public Driver updateProfile(Long userId, String name, String phone){
+        Driver driver=findByUserId(userId);
+        driver.setName(name);
+        driver.setPhone(phone);
+        return repo.save(driver);
+    }
+
+    @Override
     public void setAvailability(Long id,boolean available){
         Driver driver= findById(id);
         driver.setAvailable(available);

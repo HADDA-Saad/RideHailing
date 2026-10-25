@@ -30,6 +30,20 @@ public class RiderServiceImpl implements RiderService{
     }
 
     @Override
+    public Rider findByUserId(Long userId){
+        return repo.findByUserId(userId).
+                orElseThrow(()->new RuntimeException("Rider not found"));
+    }
+
+    @Override
+    public Rider updateProfile(Long userId, String name, String phone){
+        Rider rider=findByUserId(userId);
+        rider.setName(name);
+        rider.setPhone(phone);
+        return repo.save(rider);
+    }
+
+    @Override
     public List<Rider> findByName(String name) {
         return repo.findByName(name);
     }

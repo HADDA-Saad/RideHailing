@@ -4,9 +4,11 @@ import com.ridehailing.location.dto.DriverLocationRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.kafka.core.KafkaTemplate;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -19,6 +21,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class LocationProducerTest {
     @Mock
     KafkaTemplate<String,String> kafkaTemplate;
@@ -38,7 +41,7 @@ class LocationProducerTest {
     @DisplayName("publish: the payload is the request serialized as JSON")
     void publish_payloadIsRequestAsJson() {
         producer.publish(new DriverLocationRequest(7L,1000L,1200L));
-        verify(kafkaTemplate).send(eq("driver-location"),eq("7L"),payloadCaptor.capture());
+        verify(kafkaTemplate).send(eq("driver-locations"),eq("7"),payloadCaptor.capture());
         JsonNode json = objectMapper.readTree(payloadCaptor.getValue());
 
         assertThat(json.get("driverId").asLong()).isEqualTo(7L);
@@ -52,7 +55,7 @@ class LocationProducerTest {
         DriverLocationRequest request=new DriverLocationRequest(7L,1000L,1200L);
         producer.publish(request);
 
-        verify(kafkaTemplate).send(eq("driver-location"),eq("7L"),payloadCaptor.capture());
+        verify(kafkaTemplate).send(eq("driver-locations"),eq("7"),payloadCaptor.capture());
         assertThat(objectMapper.readValue(payloadCaptor.getValue(),DriverLocationRequest.class)).isEqualTo(request);
 
 

@@ -63,9 +63,10 @@ class LocationConsumerTest {
     void consume_runsStepsInOrder_andNeverUsesDlq() {
         saveSucceeds();
         consumer.consume(PAYLOAD);
+        String cachedJson = objectMapper.writeValueAsString(savedLocation());
         InOrder order = inOrder(service, valueOps, messagingTemplate);
         order.verify(service).saveLocation(7L, 36.0, 3.0);
-        order.verify(valueOps).set(eq(KEY),eq(PAYLOAD), Duration.ofHours(24));
+        order.verify(valueOps).set(eq(KEY),eq(cachedJson), eq(Duration.ofHours(24)));
         order.verify(messagingTemplate).convertAndSend(WS_TOPIC, PAYLOAD);
         verify(producer, never()).publishToDlq(anyString());
     }

@@ -19,9 +19,12 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final TokenDenylistService tokenDenylistService;
 
-    public JwtAuthenticationFilter(JwtService jwtService) {
+    public JwtAuthenticationFilter(JwtService jwtService,
+                                   TokenDenylistService tokenDenylistService) {
         this.jwtService = jwtService;
+        this.tokenDenylistService = tokenDenylistService;
     }
 
     @Override
@@ -38,6 +41,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = header.substring(7);
         if (jwtService.isValid(token)
+                && !tokenDenylistService.isRevoked(jwtService.extractJti(token))
                 && SecurityContextHolder.getContext().getAuthentication() == null) {
 
             String email = jwtService.extractEmail(token);

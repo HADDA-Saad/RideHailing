@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.UUID;
 
 @Service
 public class JwtService {
@@ -26,6 +27,7 @@ public class JwtService {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + expirationMs);
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .subject(email)
                 .claim("userId", userId)
                 .claim("role", role)
@@ -45,6 +47,14 @@ public class JwtService {
 
     public String extractRole(String token) {
         return parse(token).get("role", String.class);
+    }
+
+    public String extractJti(String token) {
+        return parse(token).getId();
+    }
+
+    public Date extractExpiration(String token) {
+        return parse(token).getExpiration();
     }
 
     public boolean isValid(String token) {

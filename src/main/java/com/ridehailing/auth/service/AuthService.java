@@ -9,6 +9,7 @@ import com.ridehailing.auth.exception.EmailAlreadyUsedException;
 import com.ridehailing.auth.model.Role;
 import com.ridehailing.auth.model.User;
 import com.ridehailing.auth.security.JwtService;
+import com.ridehailing.auth.security.TokenDenylistService;
 import com.ridehailing.driver.service.DriverService;
 import com.ridehailing.rider.service.RiderService;
 import jakarta.transaction.Transactional;
@@ -16,6 +17,10 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Date;
 
 @Service
 public class AuthService {
@@ -26,19 +31,22 @@ public class AuthService {
     private final DriverService driverService;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final TokenDenylistService tokenDenylistService;
 
     public AuthService(UserRepository userRepo,
                        PasswordEncoder encoder,
                        RiderService riderService,
                        DriverService driverService,
                        AuthenticationManager authenticationManager,
-                       JwtService jwtService) {
+                       JwtService jwtService,
+                       TokenDenylistService tokenDenylistService) {
         this.userRepo = userRepo;
         this.encoder = encoder;
         this.riderService = riderService;
         this.driverService = driverService;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
+        this.tokenDenylistService = tokenDenylistService;
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -52,6 +60,16 @@ public class AuthService {
 
         String token = jwtService.generateToken(user.getEmail(), user.getId(), user.getRole().name());
         return new LoginResponse(token, user.getId(), user.getRole().name());
+    }
+
+    public void logout(String token) {
+        if (!jwtService.isValid(token)) {
+            return;
+        }
+        String jti = jwtService.extractJti(token);
+        Date expiration = jwtService.extractExpiration(token);
+        Duration ttl = Duration.between(Instant.now(), expiration.toInstant());
+        tokenDenylistService.revoke(jti, ttl);
     }
 
     @Transactional

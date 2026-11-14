@@ -78,6 +78,20 @@ Each tool was chosen for a specific job:
 
 ## Project Organization
 
+```text
+ridehailing/
+|-- backend/             Spring Boot source, Maven wrapper, Dockerfile, and load test
+|-- frontend/            React source, package.json, and Vite configuration
+|-- .github/workflows/   CI workflows
+|-- docker-compose.yml   Backend and supporting services
+|-- .env                 Local Compose settings (not committed)
+`-- README.md
+```
+
+Run Docker Compose from the repository root. Backend commands run from
+`backend/`, and frontend commands run from `frontend/`. The backend Dockerfile
+uses `backend/` as its build context, both in Compose and CI.
+
 The code is divided into independent areas, each responsible for one part of the business:
 
 - **Driver**: who the drivers are
@@ -104,7 +118,27 @@ You need [Docker](https://www.docker.com/) installed.
    ```
 3. Check that it's running: <http://localhost:8080/actuator/health>
 
-To try the load test, install [k6](https://k6.io/) and run `k6 run load-test.js`.
+To run the frontend locally, open a separate terminal:
+
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+
+Open <http://localhost:5173>. Vite proxies API requests to the backend on port 8080.
+
+To run backend tests on Windows:
+
+```powershell
+cd backend
+.\mvnw.cmd clean verify
+```
+
+On Linux or macOS, use `./mvnw clean verify` from `backend/`.
+
+To try the load test from the repository root, install [k6](https://k6.io/) and run
+`k6 run backend/load-test.js`.
 
 ---
 

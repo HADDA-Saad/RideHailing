@@ -44,7 +44,7 @@ services:
       timeout: 3s
       retries: 5
   app:
-    build: .
+    build: ./backend
     container_name: ridehailing-app
     depends_on:
       postgres:

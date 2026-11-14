@@ -26,8 +26,10 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
+          cache-dependency-path: backend/pom.xml
 
       - name: Build and test
+        working-directory: backend
         run: mvn --batch-mode clean package
 
 
@@ -53,7 +55,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v7
         with:
-          context: .
+          context: ./backend
           push: ${{ github.event_name == 'push' }}
           tags: |
             ${{ vars.DOCKERHUB_USERNAME }}/ridehailing:latest

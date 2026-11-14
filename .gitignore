@@ -1,6 +1,6 @@
 HELP.md
 target/
-.mvn/wrapper/maven-wrapper.jar
+**/.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
 
@@ -36,3 +36,11 @@ build/
 ### Secrets ###
 application.properties
 .env
+.env.*
+!.env.example
+
+### JavaScript dependencies and generated files ###
+node_modules/
+dist/
+dist-ssr/
+*.tsbuildinfo

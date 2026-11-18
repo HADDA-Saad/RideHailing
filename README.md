@@ -116,9 +116,10 @@ You need [Docker](https://www.docker.com/) installed.
    ```bash
    docker compose up --build
    ```
-3. Check that it's running: <http://localhost:8080/actuator/health>
+3. Open the frontend at <http://localhost:3000>. Nginx serves the React build
+   and proxies API requests to the backend container on port 8080.
 
-To run the frontend locally, open a separate terminal:
+To run the frontend with Vite instead, open a separate terminal:
 
 ```bash
 cd frontend

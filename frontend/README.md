@@ -111,7 +111,8 @@ required. Authentication service tests intentionally expect /api/api/auth URLs:
 Vite strips the first /api, leaving the backend's /api/auth mapping.
 
 These are module unit tests; they do not exercise rendered React screens or the
-real backend. CI and Docker configuration are unchanged by this test setup.
+real backend. CI installs dependencies, runs these tests, and builds the frontend
+using Node 24. The frontend Dockerfile also runs the tests before building.
 
 ---
 
@@ -146,8 +147,63 @@ The current backend has mixed path prefixes, so pointing this variable directly
 at port 8080 would bypass the required rewrite.
 
 These browser requests are same-origin and need no backend CORS configuration.
-The proxy runs only in development. A production reverse proxy such as Nginx
-will need equivalent routing; it has not been configured yet.
+The Vite proxy runs only in development. The container's Nginx configuration
+provides equivalent routing when running the built frontend.
+
+## Running with Docker
+
+From the repository root:
+
+```powershell
+docker compose up --build -d
+```
+
+Open http://localhost:3000. The frontend is served by Nginx on container port 80;
+port 5173 remains available for the separate Vite development server.
+
+The frontend Dockerfile first uses Node to install dependencies with npm ci,
+run the unit tests, and build with TypeScript/Vite. The final Nginx image
+contains only the built dist files and nginx.conf, without Node, source code,
+or node_modules. Local .env files and existing build output are excluded from
+the build context. The image fixes VITE_API_BASE_URL to /api at build time.
+
+Nginx serves frontend routes such as /dashboard, /rides, and /drivers through
+index.html. Requests starting with /api/ go to app:8080 over the Compose network,
+with exactly the first /api/ stripped. For example, /api/api/auth/login reaches
+/api/auth/login, while /api/riders/me reaches /riders/me. Request methods,
+bodies, Authorization headers, cookies, and backend response statuses pass
+through the proxy. Backend services must run on the same Docker network with
+the name app. The frontend health check only checks static serving.
+
+To rebuild and restart only the frontend when the backend is already running:
+
+```powershell
+docker compose up --build -d --no-deps frontend
+```
+
+To inspect its logs and image size:
+
+```powershell
+docker compose logs -f frontend
+docker image ls ridehailing-frontend
+docker history ridehailing-frontend:local
+```
+
+This setup serves HTTP locally; public HTTPS remains a deployment step.
+
+## Continuous integration
+
+The root .github/workflows/ci.yml runs on pull requests targeting main, pushes
+to main, and manual dispatches. Backend checks and frontend checks run in
+parallel. Both must pass before the backend and frontend Docker images build.
+
+Docker Hub login and image publishing run only on pushes to main. The existing
+DOCKERHUB_USERNAME repository variable and DOCKERHUB_TOKEN secret are shared by
+both image builds. The frontend image is published as
+DOCKERHUB_USERNAME/ridehailing-frontend with latest and commit-SHA tags; the
+backend keeps its existing DOCKERHUB_USERNAME/ridehailing tags. The token needs
+permission to push both repositories. Pull requests and manual runs build
+images without publishing them. This workflow does not deploy containers.
 
 ---
 

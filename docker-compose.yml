@@ -62,5 +62,14 @@ services:
       SPRING_DATA_REDIS_PORT: 6379
     ports:
       - "8080:8080"
+  frontend:
+    build: ./frontend
+    image: ridehailing-frontend:local
+    container_name: ridehailing-frontend
+    depends_on:
+      app:
+        condition: service_started
+    ports:
+      - "3000:80"
 volumes:
   pgdata:

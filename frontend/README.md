@@ -94,7 +94,24 @@ Other scripts:
 npm run build       # type-check + production build into dist/
 npm run preview     # preview the production build locally
 npm run typecheck   # type-check only, no output
+npm test            # run unit tests once
+npm run test:watch  # rerun unit tests when files change
 ```
+
+## Unit tests
+
+Vitest runs the `src/**/*.test.ts` files. jsdom provides browser APIs such as
+localStorage without opening a browser. Run `npm ci` first on a new checkout.
+
+The tests cover saved-session restoration and clearing, JWT request headers,
+unauthorized responses, readable backend errors, and the API contracts for
+login, rider/driver registration, logout, and profile retrieval. Axios adapters
+simulate backend responses, so no Spring Boot server, Docker, or database is
+required. Authentication service tests intentionally expect /api/api/auth URLs:
+Vite strips the first /api, leaving the backend's /api/auth mapping.
+
+These are module unit tests; they do not exercise rendered React screens or the
+real backend. CI and Docker configuration are unchanged by this test setup.
 
 ---
 

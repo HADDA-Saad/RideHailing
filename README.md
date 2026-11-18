@@ -138,6 +138,9 @@ cd backend
 
 On Linux or macOS, use `./mvnw clean verify` from `backend/`.
 
+For test coverage, SonarQube Cloud setup, and the required GitHub Actions
+variables and secret, see [the SonarQube guide](docs/sonarqube.md).
+
 To try the load test from the repository root, install [k6](https://k6.io/) and run
 `k6 run backend/load-test.js`.
 

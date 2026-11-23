@@ -158,7 +158,7 @@ From the repository root:
 docker compose up --build -d
 ```
 
-Open http://localhost:3000. The frontend is served by Nginx on container port 80;
+Open http://localhost:3000. Nginx runs as the unprivileged `nginx` user on container port 8080;
 port 5173 remains available for the separate Vite development server.
 
 The frontend Dockerfile first uses Node to install dependencies with npm ci,

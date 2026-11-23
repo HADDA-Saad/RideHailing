@@ -116,9 +116,10 @@ You need [Docker](https://www.docker.com/) installed.
    ```bash
    docker compose up --build
    ```
-3. Check that it's running: <http://localhost:8080/actuator/health>
+3. Open the frontend at <http://localhost:3000>. Nginx serves the React build
+   and proxies API requests to the backend container on port 8080.
 
-To run the frontend locally, open a separate terminal:
+To run the frontend with Vite instead, open a separate terminal:
 
 ```bash
 cd frontend
@@ -136,6 +137,9 @@ cd backend
 ```
 
 On Linux or macOS, use `./mvnw clean verify` from `backend/`.
+
+For test coverage, SonarQube Cloud setup, and the required GitHub Actions
+variables and secret, see [the SonarQube guide](docs/sonarqube.md).
 
 To try the load test from the repository root, install [k6](https://k6.io/) and run
 `k6 run backend/load-test.js`.

@@ -34,7 +34,6 @@ build/
 .vscode/
 
 ### Secrets ###
-application.properties
 .env
 .env.*
 !.env.example

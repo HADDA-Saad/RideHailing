@@ -5,6 +5,9 @@ import com.ridehailing.driver.model.Driver;
 import com.ridehailing.driver.repository.DriverRepository;
 import com.ridehailing.ride.model.RideStatus;
 import com.ridehailing.ride.repository.RideRepository;
+import com.ridehailing.rider.model.Rider;
+import com.ridehailing.rider.repository.RiderRepository;
+import org.springframework.security.access.AccessDeniedException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,8 +21,11 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 class RideServiceImplTest {
@@ -27,6 +33,8 @@ class RideServiceImplTest {
     RideRepository rideRepo;
     @Mock
     DriverRepository driverRepo;
+    @Mock
+    RiderRepository riderRepo;
 
     @InjectMocks
     RideServiceImpl service;
@@ -45,11 +53,26 @@ class RideServiceImplTest {
 
 
     @Test
-    @DisplayName("requestRide: creates the ride with status ACTIVE")
-    void requestRide_createsRideWithStatusActive() {
+    void requestRide_savesActiveRideForResolvedRider() {
+        Rider rider = new Rider();
+        rider.setId(7L);
+        when(riderRepo.findByUserId(42L)).thenReturn(Optional.of(rider));
         rideRepoEchoesSaved();
-        Ride result = service.requestRide(10L, 20L);
+
+        Ride result = service.requestRide(10L, 42L);
+
+        verify(rideRepo).save(result);
+        assertThat(result.getRiderId()).isEqualTo(7L);
+        assertThat(result.getDriverId()).isEqualTo(10L);
         assertThat(result.getStatus()).isEqualTo(RideStatus.ACTIVE);
+    }
+
+    @Test
+    void requestRide_deniesMissingRiderProfileBeforeSave() {
+        when(riderRepo.findByUserId(42L)).thenReturn(Optional.empty());
+
+        assertThrows(AccessDeniedException.class, () -> service.requestRide(10L, 42L));
+        verify(rideRepo, never()).save(any());
     }
 
 

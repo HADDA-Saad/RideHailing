@@ -7,7 +7,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import java.util.List;
 
 public interface RideService {
-    Ride requestRide(Long driverId,Long riderId);
+    @PreAuthorize("hasRole('RIDER')")
+    Ride requestRide(Long driverId, Long authenticatedUserId);
     Ride findById(Long id);
     List<Ride> findByDriverId(Long DriverId);
     List<Ride> findByRiderId(Long id);

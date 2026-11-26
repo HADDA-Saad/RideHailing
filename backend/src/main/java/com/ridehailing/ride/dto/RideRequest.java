@@ -1,6 +1,7 @@
 package com.ridehailing.ride.dto;
 
-import com.ridehailing.ride.model.RideStatus;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
-public record RideRequest(Long driverId, Long riderId) {
+public record RideRequest(@NotNull @Positive Long driverId) {
 }

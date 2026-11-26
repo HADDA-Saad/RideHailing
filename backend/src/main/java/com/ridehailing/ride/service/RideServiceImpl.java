@@ -5,6 +5,8 @@ import com.ridehailing.driver.repository.DriverRepository;
 import com.ridehailing.ride.model.Ride;
 import com.ridehailing.ride.model.RideStatus;
 import com.ridehailing.ride.repository.RideRepository;
+import com.ridehailing.rider.model.Rider;
+import com.ridehailing.rider.repository.RiderRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
@@ -18,14 +20,22 @@ import java.util.List;
 public class RideServiceImpl implements RideService{
     private final RideRepository rideRepo;
     private final DriverRepository driverRepo;
+    private final RiderRepository riderRepo;
 
-    public RideServiceImpl(RideRepository rideRepo, DriverRepository driverRepo) {
+    public RideServiceImpl(RideRepository rideRepo, DriverRepository driverRepo,
+                           RiderRepository riderRepo) {
         this.rideRepo = rideRepo;
         this.driverRepo = driverRepo;
+        this.riderRepo = riderRepo;
     }
-    public Ride requestRide(Long driverId,Long riderId){
-        Ride ride=new Ride();
-        ride.setRiderId(riderId);
+
+    @Override
+    public Ride requestRide(Long driverId, Long authenticatedUserId) {
+        Rider rider = riderRepo.findByUserId(authenticatedUserId)
+                .orElseThrow(() -> new AccessDeniedException("Rider profile required"));
+
+        Ride ride = new Ride();
+        ride.setRiderId(rider.getId());
         ride.setDriverId(driverId);
         ride.setStatus(RideStatus.ACTIVE);
         return rideRepo.save(ride);

@@ -1,5 +1,10 @@
 package com.ridehailing.location.service;
 
+import com.ridehailing.location.dto.DriverLocationRequest;
+import com.ridehailing.driver.repository.DriverRepository;
+import com.ridehailing.driver.model.Driver;
+import org.springframework.security.access.AccessDeniedException;
+
 import com.ridehailing.location.model.DriverLocation;
 import com.ridehailing.location.repository.DriverLocationRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +34,8 @@ import static org.mockito.Mockito.*;
 class DriverLocationServiceImplTest {
     private static final String KEY = "driver:latest:7";
 
+    @Mock DriverRepository drivers;
+    @Mock LocationProducer producer;
     @Mock DriverLocationRepository repo;
     @Mock RedisTemplate<String, String> redisTemplate;
     @Mock ValueOperations<String, String> valueOps;
@@ -37,7 +44,7 @@ class DriverLocationServiceImplTest {
     DriverLocationServiceImpl service;
     @BeforeEach
     void setUp() {
-        service = new DriverLocationServiceImpl(repo, redisTemplate, objectMapper);
+        service = new DriverLocationServiceImpl(repo, redisTemplate, objectMapper, drivers, producer);
     }
     private void cacheReturns(String json) {
         when(redisTemplate.opsForValue()).thenReturn(valueOps);
@@ -144,7 +151,20 @@ class DriverLocationServiceImplTest {
     }
 
     @Test
-    void getHistory() {
+    void onlyOwnerCanPublishAndReadHistory() {
+        Driver driver = new Driver();
+        driver.setId(7L);
+        when(drivers.findByUserId(42L)).thenReturn(Optional.of(driver));
+        DriverLocationRequest own = new DriverLocationRequest(7L, 1L, 2L);
+        service.publishLocation(own, 42L);
+        verify(producer).publish(own);
+        service.getHistory(7L, 42L);
+        verify(repo).findByDriverId(7L);
+
+        DriverLocationRequest other = new DriverLocationRequest(42L, 1L, 2L);
+        assertThrows(AccessDeniedException.class, () -> service.publishLocation(other, 42L));
+        assertThrows(AccessDeniedException.class, () -> service.getHistory(42L, 42L));
+        verifyNoMoreInteractions(producer, repo);
 
     }
 

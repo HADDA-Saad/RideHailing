@@ -1,5 +1,10 @@
 package com.ridehailing.rider.controller;
 
+import com.ridehailing.auth.model.Role;
+import org.springframework.security.core.Authentication;
+
+import com.ridehailing.rider.dto.RiderSummaryResponse;
+
 import com.ridehailing.auth.security.AuthenticatedUser;
 import com.ridehailing.rider.dto.RiderResponse;
 import com.ridehailing.rider.dto.UpdateRiderRequest;
@@ -35,8 +40,9 @@ public class RiderController {
     }
 
     @GetMapping("/{id}")
-    public RiderResponse findById(@PathVariable Long id){
-        Rider rider=service.findById(id);
-        return RiderResponse.from(rider);
+    public RiderSummaryResponse findById(@PathVariable Long id, @AuthenticationPrincipal AuthenticatedUser me,
+                                         Authentication authentication){
+        Rider rider=service.findVisibleById(id, me.userId(), Role.fromAuthentication(authentication));
+        return RiderSummaryResponse.from(rider);
     }
 }

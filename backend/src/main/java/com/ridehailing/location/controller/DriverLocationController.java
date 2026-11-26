@@ -1,11 +1,13 @@
 package com.ridehailing.location.controller;
 
+import com.ridehailing.auth.security.AuthenticatedUser;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+
 
 import com.ridehailing.location.dto.DriverLocationRequest;
 import com.ridehailing.location.dto.DriverLocationResponse;
 import com.ridehailing.location.model.DriverLocation;
 import com.ridehailing.location.service.DriverLocationService;
-import com.ridehailing.location.service.LocationProducer;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,15 +17,13 @@ import java.util.List;
 @RequestMapping("/locations")
 public class DriverLocationController {
     private final DriverLocationService service;
-    private final LocationProducer producer;
-    public DriverLocationController(DriverLocationService service,LocationProducer producer){
+    public DriverLocationController(DriverLocationService service){
         this.service=service;
-        this.producer=producer;
     }
     @PostMapping
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public void ingestLocation(@RequestBody DriverLocationRequest request){
-         producer.publish(request);
+    public void ingestLocation(@RequestBody DriverLocationRequest request, @AuthenticationPrincipal AuthenticatedUser me) {
+        service.publishLocation(request, me.userId());
     }
 
     @GetMapping("/driver/{driverId}")
@@ -31,8 +31,8 @@ public class DriverLocationController {
         return DriverLocationResponse.from(service.getLatest(driverId));
     }
     @GetMapping("/history/{driverId}")
-    List<DriverLocationResponse> getHistory(@PathVariable Long driverId){
-        return service.getHistory(driverId).stream().map(DriverLocationResponse::from).toList();
+    List<DriverLocationResponse> getHistory(@PathVariable Long driverId, @AuthenticationPrincipal AuthenticatedUser me){
+        return service.getHistory(driverId, me.userId()).stream().map(DriverLocationResponse::from).toList();
     }
 
 

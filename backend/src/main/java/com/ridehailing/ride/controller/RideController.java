@@ -1,5 +1,8 @@
 package com.ridehailing.ride.controller;
 
+import org.springframework.security.core.Authentication;
+import com.ridehailing.auth.model.Role;
+
 import com.ridehailing.ride.dto.RideRequest;
 import com.ridehailing.ride.dto.RideResponse;
 import com.ridehailing.ride.model.Ride;
@@ -36,8 +39,9 @@ public class RideController {
     }
 
     @GetMapping("/driver/{driverId}")
-    public List<RideResponse> findByDriverId(@PathVariable Long driverId) {
-        List<Ride> rides = service.findByDriverId(driverId);
+    public List<RideResponse> findByDriverId(@PathVariable Long driverId,
+            @AuthenticationPrincipal AuthenticatedUser me) {
+        List<Ride> rides = service.findByDriverId(driverId, me.userId());
         List<RideResponse> result = new ArrayList<>();
         for (Ride ride : rides) {
             result.add(RideResponse.from(ride));
@@ -46,8 +50,9 @@ public class RideController {
     }
 
     @GetMapping("/rider/{riderId}")
-    public List<RideResponse> findByRiderId(@PathVariable Long riderId) {
-        List<Ride> rides = service.findByRiderId(riderId);
+    public List<RideResponse> findByRiderId(@PathVariable Long riderId,
+            @AuthenticationPrincipal AuthenticatedUser me) {
+        List<Ride> rides = service.findByRiderId(riderId, me.userId());
         List<RideResponse> result = new ArrayList<>();
         for (Ride ride : rides) {
             result.add(RideResponse.from(ride));
@@ -56,14 +61,16 @@ public class RideController {
     }
 
     @GetMapping("/{id}")
-    public RideResponse findById(@PathVariable Long id) {
-        Ride ride = service.findById(id);
+    public RideResponse findById(@PathVariable Long id,
+            @AuthenticationPrincipal AuthenticatedUser me, Authentication authentication) {
+        Ride ride = service.findById(id, me.userId(), Role.fromAuthentication(authentication));
         return RideResponse.from(ride);
     }
 
     @GetMapping("/status/{status}")
-    public List<RideResponse> findByStatus(@PathVariable RideStatus status) {
-        List<Ride> rides = service.findByStatus(status);
+    public List<RideResponse> findByStatus(@PathVariable RideStatus status,
+            @AuthenticationPrincipal AuthenticatedUser me, Authentication authentication) {
+        List<Ride> rides = service.findByStatus(status, me.userId(), Role.fromAuthentication(authentication));
         List<RideResponse> result = new ArrayList<>();
         for (Ride ride : rides) {
             result.add(RideResponse.from(ride));

@@ -1,5 +1,7 @@
 package com.ridehailing.ride.service;
 
+import com.ridehailing.auth.model.Role;
+
 import com.ridehailing.driver.model.Driver;
 import com.ridehailing.driver.repository.DriverRepository;
 import com.ridehailing.ride.model.Ride;
@@ -42,17 +44,39 @@ public class RideServiceImpl implements RideService{
     }
 
 
-    public Ride findById(Long id){
-        return rideRepo.findById(id).
-                orElseThrow(()->new RuntimeException("Ride not found"));
+    private Long profileId(Long userId, Role role) {
+        if (role == Role.RIDER) {
+            return riderRepo.findByUserId(userId).map(Rider::getId)
+                    .orElseThrow(() -> new AccessDeniedException("Rider profile required"));
+        }
+        return driverRepo.findByUserId(userId).map(Driver::getId)
+                .orElseThrow(() -> new AccessDeniedException("Driver profile required"));
     }
 
-    public List<Ride> findByDriverId(Long id){
-        return rideRepo.findByDriverId(id);
+    private void requireMatch(Long profileId, Long requestedId) {
+        if (!profileId.equals(requestedId)) {
+            throw new AccessDeniedException("Access denied");
+        }
     }
 
-    public List<Ride> findByRiderId(Long id){
-        return rideRepo.findByRiderId(id);
+    // A ride belongs to both participants' histories, even after it ends.
+    public Ride findById(Long id, Long userId, Role role) {
+        Ride ride = rideRepo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ride not found"));
+        requireMatch(profileId(userId, role), role == Role.RIDER ? ride.getRiderId() : ride.getDriverId());
+        return ride;
+    }
+
+    public List<Ride> findByDriverId(Long id, Long userId) {
+        Long driverId = profileId(userId, Role.DRIVER);
+        requireMatch(driverId, id);
+        return rideRepo.findByDriverId(driverId);
+    }
+
+    public List<Ride> findByRiderId(Long id, Long userId) {
+        Long riderId = profileId(userId, Role.RIDER);
+        requireMatch(riderId, id);
+        return rideRepo.findByRiderId(riderId);
     }
 
     @Override
@@ -68,7 +92,9 @@ public class RideServiceImpl implements RideService{
         ride.setStatus(RideStatus.COMPLETED);
         return rideRepo.save(ride);
     }
-    public List<Ride> findByStatus(RideStatus status){
-        return rideRepo.findByStatus(status);
+    public List<Ride> findByStatus(RideStatus status, Long userId, Role role) {
+        Long id = profileId(userId, role);
+        return role == Role.RIDER ? rideRepo.findByStatusAndRiderId(status, id)
+                : rideRepo.findByStatusAndDriverId(status, id);
     }
 }

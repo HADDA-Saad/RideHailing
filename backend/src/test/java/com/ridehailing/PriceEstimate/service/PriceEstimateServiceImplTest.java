@@ -1,5 +1,11 @@
 package com.ridehailing.PriceEstimate.service;
 
+import static org.mockito.Mockito.verifyNoInteractions;
+
+import com.ridehailing.auth.model.Role;
+import com.ridehailing.ride.service.RideService;
+import org.springframework.security.access.AccessDeniedException;
+
 import com.ridehailing.PriceEstimate.model.PriceEstimate;
 import com.ridehailing.PriceEstimate.repository.PriceEstimateRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -28,6 +34,9 @@ class PriceEstimateServiceImplTest {
     @Mock
     PriceEstimateRepository repo;
 
+    @Mock
+    RideService rides;
+
     @InjectMocks
     PriceEstimateServiceImpl service;
 
@@ -49,7 +58,7 @@ class PriceEstimateServiceImplTest {
     void calculatePrice(String distance,String expected) {
         repoEchoesSavedEntity();
 
-        PriceEstimate result=service.calculatePrice(1L, new BigDecimal(distance));
+        PriceEstimate result=service.calculatePrice(1L, new BigDecimal(distance), 42L);
 
         assertThat(result.getPrice()).isEqualByComparingTo(expected);
 
@@ -60,7 +69,7 @@ class PriceEstimateServiceImplTest {
         repoEchoesSavedEntity();
         ArgumentCaptor<PriceEstimate> captor = ArgumentCaptor.forClass(
                 PriceEstimate.class);
-        service.calculatePrice(77L, new BigDecimal("4"));
+        service.calculatePrice(77L, new BigDecimal("4"), 42L);
         verify(repo).save(captor.capture());
         PriceEstimate saved = captor.getValue();
         assertThat(saved.getRideId()).isEqualTo(77L);
@@ -73,7 +82,7 @@ class PriceEstimateServiceImplTest {
     void returnsBaseFare_whenDistanceIsZero() {
         repoEchoesSavedEntity();
 
-        PriceEstimate result=service.calculatePrice(11L,new BigDecimal("0"));
+        PriceEstimate result=service.calculatePrice(11L,new BigDecimal("0"), 42L);
 
         assertThat(result.getPrice()).isEqualByComparingTo(new BigDecimal("5"));
     }
@@ -84,13 +93,13 @@ class PriceEstimateServiceImplTest {
         PriceEstimate estimate = new PriceEstimate();
         estimate.setRideId(5L);
         when(repo.findByRideId(5L)).thenReturn(Optional.of(estimate));
-        assertThat(service.findByRideId(5L)).isSameAs(estimate);
+        assertThat(service.findByRideId(5L, 42L, Role.DRIVER)).isSameAs(estimate);
     }
 
     @Test
     void findByRideId_throws_whenMissing() {
         when(repo.findByRideId(404L)).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> service.findByRideId(404L))
+        assertThatThrownBy(() -> service.findByRideId(404L, 42L, Role.DRIVER))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("Ride not found");
     }
@@ -99,21 +108,21 @@ class PriceEstimateServiceImplTest {
     @DisplayName("KNOWN ISSUE: a negative distance produces a negative fare")
     void calculatePrice_producesNegativeFare_forNegativeDistance_knownIssue() {
         repoEchoesSavedEntity();
-        PriceEstimate result = service.calculatePrice(1L, new BigDecimal("-5"));
+        PriceEstimate result = service.calculatePrice(1L, new BigDecimal("-5"), 42L);
         assertThat(result.getPrice().toPlainString()).isEqualTo("-7.50");
     }
 
     @Test
     @DisplayName("KNOWN ISSUE: a null distance throws NullPointerException before anything is saved")
     void calculatePrice_throwsNpe_forNullDistance_knownIssue() {
-        assertThatThrownBy(() -> service.calculatePrice(1L, null))
+        assertThatThrownBy(() -> service.calculatePrice(1L, null, 42L))
                 .isInstanceOf(NullPointerException.class);
     }
     @Test
     @DisplayName("boundary: a very large distance does not overflow")
     void calculatePrice_handlesVeryLargeDistance() {
         repoEchoesSavedEntity();
-        PriceEstimate result = service.calculatePrice(1L, new BigDecimal("100000"))
+        PriceEstimate result = service.calculatePrice(1L, new BigDecimal("100000"), 42L)
                 ;
         assertThat(result.getPrice().toPlainString()).isEqualTo("250005.00");
     }

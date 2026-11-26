@@ -1,5 +1,7 @@
 package com.ridehailing.driver.controller;
 
+import com.ridehailing.driver.dto.DriverSummaryResponse;
+
 import com.ridehailing.auth.security.AuthenticatedUser;
 import com.ridehailing.driver.dto.DriverResponse;
 import com.ridehailing.driver.dto.UpdateDriverRequest;
@@ -35,9 +37,10 @@ public class DriverController {
     }
 
     @GetMapping("/{id}")
-    public DriverResponse FindById(
+    @PreAuthorize("hasAnyRole('RIDER', 'DRIVER')")
+    public DriverSummaryResponse findById(
             @PathVariable Long id){
         Driver driver=service.findById(id);
-        return DriverResponse.from(driver);
+        return DriverSummaryResponse.from(driver);
     }
 }

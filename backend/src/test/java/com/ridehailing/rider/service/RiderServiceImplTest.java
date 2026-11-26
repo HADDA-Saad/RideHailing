@@ -1,5 +1,16 @@
 package com.ridehailing.rider.service;
 
+import com.ridehailing.rider.dto.RiderSummaryResponse;
+import com.ridehailing.driver.dto.DriverSummaryResponse;
+import tools.jackson.databind.json.JsonMapper;
+
+import com.ridehailing.auth.model.Role;
+import org.springframework.security.access.AccessDeniedException;
+import com.ridehailing.driver.model.Driver;
+import com.ridehailing.driver.repository.DriverRepository;
+import com.ridehailing.ride.model.RideStatus;
+import com.ridehailing.ride.repository.RideRepository;
+
 import com.ridehailing.rider.model.Rider;
 import com.ridehailing.rider.repository.RiderRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -23,6 +34,9 @@ class RiderServiceImplTest {
 
     @Mock
     RiderRepository repo;
+
+    @Mock DriverRepository drivers;
+    @Mock RideRepository rides;
 
     @InjectMocks
     RiderServiceImpl service;
@@ -93,5 +107,38 @@ class RiderServiceImplTest {
         Rider result=service.findByEmail("Sam@example.com");
 
         assertThat(result.getEmail()).isEqualTo(rider.getEmail());
+    }
+
+    @Test
+    void riderCanReadOnlyTheirOwnSummary() {
+        Rider rider = new Rider();
+        rider.setId(7L);
+        when(repo.findByUserId(42L)).thenReturn(Optional.of(rider));
+        assertThat(service.findVisibleById(7L, 42L, Role.RIDER)).isSameAs(rider);
+        assertThatThrownBy(() -> service.findVisibleById(42L, 42L, Role.RIDER))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void driverNeedsAnActiveRideWithTheRequestedRider() {
+        Driver driver = new Driver();
+        driver.setId(8L);
+        when(drivers.findByUserId(43L)).thenReturn(Optional.of(driver));
+        when(rides.existsByDriverIdAndRiderIdAndStatus(8L, 7L, RideStatus.ACTIVE)).thenReturn(true);
+        Rider rider = new Rider();
+        when(repo.findById(7L)).thenReturn(Optional.of(rider));
+        assertThat(service.findVisibleById(7L, 43L, Role.DRIVER)).isSameAs(rider);
+        assertThatThrownBy(() -> service.findVisibleById(9L, 43L, Role.DRIVER))
+                .isInstanceOf(AccessDeniedException.class);
+        verify(repo, never()).findById(9L);
+    }
+
+    @Test
+    void profileSummariesExposeOnlyApprovedFields() {
+        JsonMapper mapper = JsonMapper.builder().build();
+        assertThat(mapper.valueToTree(RiderSummaryResponse.from(new Rider())).propertyNames())
+                .containsExactlyInAnyOrder("id", "name");
+        assertThat(mapper.valueToTree(DriverSummaryResponse.from(new Driver())).propertyNames())
+                .containsExactlyInAnyOrder("id", "name", "available");
     }
 }

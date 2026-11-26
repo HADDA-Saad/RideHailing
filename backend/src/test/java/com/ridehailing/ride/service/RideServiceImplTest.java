@@ -1,5 +1,7 @@
 package com.ridehailing.ride.service;
 
+import com.ridehailing.auth.model.Role;
+
 import com.ridehailing.ride.model.Ride;
 import com.ridehailing.driver.model.Driver;
 import com.ridehailing.driver.repository.DriverRepository;
@@ -77,18 +79,39 @@ class RideServiceImplTest {
 
 
     @Test
-    void findById() {
+    void participantReadUsesTheProfileForTheAuthenticatedRole() {
+        Ride ride = rideWithStatus(RideStatus.COMPLETED);
+        Rider rider = new Rider();
+        rider.setId(ride.getRiderId());
+        when(riderRepo.findByUserId(42L)).thenReturn(Optional.of(rider));
+        when(rideRepo.findById(9L)).thenReturn(Optional.of(ride));
+        assertThat(service.findById(9L, 42L, Role.RIDER)).isSameAs(ride);
+        Driver driver = new Driver();
+        driver.setId(rider.getId());
+        when(driverRepo.findByUserId(43L)).thenReturn(Optional.of(driver));
+        assertThrows(AccessDeniedException.class, () -> service.findById(9L, 43L, Role.DRIVER));
     }
 
     @Test
     void findByDriverId_delegatesToRepository() {
         List<Ride> rides = List.of(rideWithStatus(RideStatus.ACTIVE));
         when(rideRepo.findByDriverId(10L)).thenReturn(rides);
-        assertThat(service.findByDriverId(10L)).isSameAs(rides);
+        Driver driver = new Driver();
+        driver.setId(10L);
+        when(driverRepo.findByUserId(42L)).thenReturn(Optional.of(driver));
+        assertThrows(AccessDeniedException.class, () -> service.findByDriverId(42L, 42L));
+        assertThat(service.findByDriverId(10L, 42L)).isSameAs(rides);
     }
 
     @Test
-    void findByRiderId() {
+    void riderHistoryIsOwnerOnly() {
+        Rider rider = new Rider();
+        rider.setId(7L);
+        when(riderRepo.findByUserId(42L)).thenReturn(Optional.of(rider));
+        assertThrows(AccessDeniedException.class, () -> service.findByRiderId(42L, 42L));
+        verify(rideRepo, never()).findByRiderId(42L);
+        service.findByRiderId(7L, 42L);
+        verify(rideRepo).findByRiderId(7L);
     }
 
     @ParameterizedTest(name = "a {0} ride can still be completed")
@@ -109,6 +132,16 @@ class RideServiceImplTest {
 
 
     @Test
-    void findByStatus() {
+    void statusQueriesAreScopedToCallerProfile() {
+        Rider rider = new Rider();
+        rider.setId(7L);
+        Driver driver = new Driver();
+        driver.setId(8L);
+        when(riderRepo.findByUserId(42L)).thenReturn(Optional.of(rider));
+        when(driverRepo.findByUserId(43L)).thenReturn(Optional.of(driver));
+        service.findByStatus(RideStatus.ACTIVE, 42L, Role.RIDER);
+        service.findByStatus(RideStatus.ACTIVE, 43L, Role.DRIVER);
+        verify(rideRepo).findByStatusAndRiderId(RideStatus.ACTIVE, 7L);
+        verify(rideRepo).findByStatusAndDriverId(RideStatus.ACTIVE, 8L);
     }
 }

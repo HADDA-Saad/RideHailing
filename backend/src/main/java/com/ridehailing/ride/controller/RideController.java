@@ -6,6 +6,7 @@ import com.ridehailing.ride.model.Ride;
 import com.ridehailing.ride.model.RideStatus;
 import com.ridehailing.ride.service.RideService;
 import com.ridehailing.auth.security.AuthenticatedUser;
+import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,8 +23,9 @@ public class RideController {
     }
 
     @PostMapping
-    public RideResponse requestRide(@RequestBody RideRequest request) {
-        Ride ride = service.requestRide(request.driverId(), request.riderId());
+    public RideResponse requestRide(@Valid @RequestBody RideRequest request,
+                                    @AuthenticationPrincipal AuthenticatedUser user) {
+        Ride ride = service.requestRide(request.driverId(), user.userId());
         return RideResponse.from(ride);
     }
 

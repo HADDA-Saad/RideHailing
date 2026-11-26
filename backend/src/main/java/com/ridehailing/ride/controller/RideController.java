@@ -5,6 +5,8 @@ import com.ridehailing.ride.dto.RideResponse;
 import com.ridehailing.ride.model.Ride;
 import com.ridehailing.ride.model.RideStatus;
 import com.ridehailing.ride.service.RideService;
+import com.ridehailing.auth.security.AuthenticatedUser;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -26,8 +28,8 @@ public class RideController {
     }
 
     @PatchMapping("/{id}/complete")
-    public RideResponse completeRide(@PathVariable Long id) {
-        Ride ride = service.completeRide(id);
+    public RideResponse completeRide(@PathVariable Long id, @AuthenticationPrincipal AuthenticatedUser user) {
+        Ride ride = service.completeRide(id, user.userId());
         return RideResponse.from(ride);
     }
 

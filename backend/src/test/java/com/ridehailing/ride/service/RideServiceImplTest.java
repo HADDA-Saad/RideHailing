@@ -1,6 +1,8 @@
 package com.ridehailing.ride.service;
 
 import com.ridehailing.ride.model.Ride;
+import com.ridehailing.driver.model.Driver;
+import com.ridehailing.driver.repository.DriverRepository;
 import com.ridehailing.ride.model.RideStatus;
 import com.ridehailing.ride.repository.RideRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -24,6 +26,8 @@ import static org.mockito.Mockito.when;
 class RideServiceImplTest {
     @Mock
     RideRepository rideRepo;
+    @Mock
+    DriverRepository driverRepo;
 
     @InjectMocks
     RideServiceImpl service;
@@ -74,7 +78,10 @@ class RideServiceImplTest {
         Ride ride = rideWithStatus(startingStatus);
         when(rideRepo.findById(1L)).thenReturn(Optional.of(ride));
         rideRepoEchoesSaved();
-        Ride result = service.completeRide(1L);
+        Driver driver = new Driver();
+        driver.setId(ride.getDriverId());
+        when(driverRepo.findByUserId(42L)).thenReturn(Optional.of(driver));
+        Ride result = service.completeRide(1L, 42L);
         assertThat(result.getStatus()).isEqualTo(RideStatus.COMPLETED);
     }
 
